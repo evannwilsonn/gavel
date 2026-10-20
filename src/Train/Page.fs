@@ -44,7 +44,7 @@ let tokens (root: string) =
           row "Boosted trees alone (F#)" (sprintf "%d trees, %d leaves" gbm.trees h.settings.gbm.leaves) (f3 gbm.score.rmsle) ""
           row "Random forest alone (F#)" (sprintf "%d trees" h.settings.forest.trees) (f3 forest.score.rmsle) ""
           row "ML.NET LightGBM, same settings" "the library check" (f3 lgbm.score.rmsle) ""
-          row "Browser model, this page" (sprintf "%d trees, %d inputs you can set" d.trees d.features.Length) (f3 d.heldOut.rmsle) ""
+          row "Browser model, this page" (sprintf "%d trees, %d features from the form" d.trees d.features.Length) (f3 d.heldOut.rmsle) ""
           row "Course notebook's forest" "tuned on these same sales" (f3 h.course.validRmsle) ""
           row "Median by base model and year" "baseline" (f3 modelYear.score.rmsle) ""
           row "Median by group and year made" "baseline" (f3 groupYear.score.rmsle) ""

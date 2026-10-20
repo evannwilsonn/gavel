@@ -26,7 +26,9 @@ let private view (ml: MLContext) (x: float[][]) (y: float[]) =
     let nf = x.[0].Length
     let rows =
         Array.init x.Length (fun i ->
-            { Features = x.[i] |> Array.map float32
+            // FastTree drops any row with a NaN, so missing values become -1, below every
+            // real value (all codes and measurements are >= 0): the same as missing-goes-left.
+            { Features = x.[i] |> Array.map (fun v -> if System.Double.IsNaN v then -1.0f else float32 v)
               Label = float32 y.[i] })
     let schema = SchemaDefinition.Create(typeof<Row>)
     schema.["Features"].ColumnType <- VectorDataViewType(NumberDataViewType.Single, nf)

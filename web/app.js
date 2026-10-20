@@ -377,7 +377,7 @@ function pull() {
   const est = ready ? estimate(ready, { ...record(), saledate: x.saledate }) : null;
   const body = $("tag-body");
   body.textContent = "";
-  body.append(el("p", { class: "lot-no" }, "Lot " + count.format(Number(ex.salesId))));
+  body.append(el("p", { class: "lot-no" }, "Lot " + ex.salesId));
   body.append(el("p", { class: "printed" }, `${x.fiModelDesc} · ${GROUP_WORDS[x.ProductGroup] || x.ProductGroup}`));
   body.append(el("hr", { class: "rule" }));
   const dl = el("dl");
@@ -385,7 +385,7 @@ function pull() {
   row("Sold", `${MONTHS[Number(m) - 1]} ${Number(d)}, ${y} · ${x.state}`, "typed");
   row("Hammer price (real)", money.format(ex.price), "hand");
   if (est) {
-    row("Gavel estimate", money.format(est.price), "typed");
+    row("Gavel estimate", money.format(Math.round(est.price / 100) * 100), "typed");
     const off = est.price / ex.price - 1;
     const inside = ex.price >= est.low && ex.price <= est.high;
     row("Off by", `${Math.abs(off * 100).toFixed(0)}% ${off >= 0 ? "high" : "low"} · ${inside ? "inside" : "outside"} the range`, "verdict");

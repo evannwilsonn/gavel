@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Renders .github/thumbnail/thumbnail.html to .github/thumbnail.png (1200x627 at 2x) and copies it
-to docs/thumbnail.png for og:image. The numbers come from results/holdout.json."""
-import json, shutil
+"""Renders .github/thumbnail/thumbnail.html to .github/thumbnail.png (1200x627 at 2x) and writes a
+1200x627 JPEG copy to docs/thumbnail.jpg for og:image. The numbers come from results/holdout.json.
+Needs Python Playwright and Pillow."""
+import json
+from PIL import Image
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
@@ -31,5 +33,8 @@ try:
         browser.close()
 finally:
     tmp.unlink()
-shutil.copy(root / ".github/thumbnail.png", root / "docs/thumbnail.png")
-print("Wrote .github/thumbnail.png and docs/thumbnail.png", tokens)
+png = root / ".github/thumbnail.png"
+img = Image.open(png).convert("RGB")
+img.save(png, optimize=True)
+img.resize((1200, 627), Image.LANCZOS).save(root / "docs/thumbnail.jpg", quality=86, optimize=True, progressive=True)
+print("Wrote .github/thumbnail.png and docs/thumbnail.jpg", tokens)

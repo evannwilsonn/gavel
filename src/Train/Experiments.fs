@@ -192,37 +192,52 @@ let tune (dataDir: string) (resultsDir: string) =
             w, entry (sprintf "Blend: %g boosting + %g forest" w (1.0 - w)) "" 0 pred price (timed ()))
     let bestW, _ = blends |> Array.minBy (fun (_, e) -> e.score.rmsle)
 
-    // 5. ML.NET with matching settings, as a check on the from-scratch learners.
+    let save (mlnet: Entry[]) =
+        let result =
+            { fitting = "Train.csv sales before 2011-09-01"
+              tuning = "Train.csv sales 2011-09-01 to 2011-12-31"
+              fittingSales = fit.count
+              tuningSales = check.count
+              baselines = baselines
+              encoding = encoding
+              boosting = gbmRuns |> Array.map (fun (_, _, _, _, e) -> e)
+              forest = forestRuns |> Array.map (fun (_, _, e) -> e)
+              blend = blends |> Array.map snd
+              mlnet = mlnet
+              curve = bestCurve |> Array.map (Json.round 5)
+              chosen =
+                { order = orderName order
+                  features = set
+                  gbm = bestG
+                  gbmTrees = bestTrees
+                  forest = bestF
+                  blendWeight = bestW } }
+        Json.write (Path.Combine(resultsDir, "tuning.json")) result
+        result
+    // ML.NET's check on these choices is a separate step (`mlnet`), which adds to this file.
+    save [||]
+
+/// ML.NET's learners with the settings `tune` chose, on the same tuning window, as a check on the
+/// from-scratch ones. Adds them to results/tuning.json.
+let mlnetLearners (c: Choice) =
+    [| MlNetCheck.LightGbm(c.gbmTrees, c.gbm.leaves, c.gbm.minLeaf, c.gbm.learningRate)
+       MlNetCheck.FastTree(c.gbmTrees, c.gbm.leaves, c.gbm.minLeaf, c.gbm.learningRate)
+       MlNetCheck.FastForest(c.forest.trees, 4096, c.forest.minLeaf) |]
+
+let mlnetCheck (dataDir: string) (resultsDir: string) =
+    let path = Path.Combine(resultsDir, "tuning.json")
+    let t: Tuning = Json.read path
+    let c = t.chosen
+    let train = loadTrain dataDir
+    let fit, check = splitTuning train
+    let p = prepare (fullFeatures c.features (if c.order = orderName Alphabetical then Alphabetical else ByPrice) fit) fit check
     let mlnet =
-        [| MlNetCheck.LightGbm(bestTrees, bestG.leaves, bestG.minLeaf, bestG.learningRate)
-           MlNetCheck.FastTree(bestTrees, bestG.leaves, bestG.minLeaf, bestG.learningRate)
-           MlNetCheck.FastForest(90, 4096, bestF.minLeaf) |]
+        mlnetLearners c
         |> Array.map (fun l ->
             let sw = timed ()
             let pred = (MlNetCheck.fitPredict l p.fitX p.fitY [ p.testX ]).Head
-            entry (MlNetCheck.name l) "same features" 0 pred price sw)
-
-    let result =
-        { fitting = "Train.csv sales before 2011-09-01"
-          tuning = "Train.csv sales 2011-09-01 to 2011-12-31"
-          fittingSales = fit.count
-          tuningSales = check.count
-          baselines = baselines
-          encoding = encoding
-          boosting = gbmRuns |> Array.map (fun (_, _, _, _, e) -> e)
-          forest = forestRuns |> Array.map (fun (_, _, e) -> e)
-          blend = blends |> Array.map snd
-          mlnet = mlnet
-          curve = bestCurve |> Array.map (Json.round 5)
-          chosen =
-            { order = orderName order
-              features = set
-              gbm = bestG
-              gbmTrees = bestTrees
-              forest = bestF
-              blendWeight = bestW } }
-    Json.write (Path.Combine(resultsDir, "tuning.json")) result
-    result
+            entry (MlNetCheck.name l) "same features, missing as -1" 0 pred check.price sw)
+    Json.write path { t with mlnet = mlnet }
 
 // ---------------------------------------------------------------------------------------------
 // The held-out run: settings come from results/tuning.json, the 2012 prices are read once.
@@ -387,14 +402,13 @@ let holdout (dataDir: string) (resultsDir: string) =
         entry (sprintf "Final: %g boosting + %g forest" w (1.0 - w)) "weights chosen on the tuning window" 0 finalPred price (timed ())
     let trainPred =
         Array.map2 (fun a b -> w * a + (1.0 - w) * b) (predictAll gbm p.fitX) (predictAll forest p.fitX)
+    Json.write (Path.Combine(resultsDir, "errors.json")) (errorAnalysis finalPred p gbm train valid)
     let mlnet =
-        [| MlNetCheck.LightGbm(c.gbmTrees, c.gbm.leaves, c.gbm.minLeaf, c.gbm.learningRate)
-           MlNetCheck.FastTree(c.gbmTrees, c.gbm.leaves, c.gbm.minLeaf, c.gbm.learningRate)
-           MlNetCheck.FastForest(90, 4096, c.forest.minLeaf) |]
+        mlnetLearners c
         |> Array.map (fun l ->
             let sw = timed ()
             let pred = (MlNetCheck.fitPredict l p.fitX p.fitY [ p.testX ]).Head
-            entry (MlNetCheck.name l) "same features" 0 pred price sw)
+            entry (MlNetCheck.name l) "same features, missing as -1" 0 pred price sw)
     let result =
         { fit = "all of Train.csv (sales to 2011-12-31)"
           heldOut = "Valid.csv with ValidSolution.csv (sales 2012-01-01 to 2012-04-30)"
@@ -410,5 +424,4 @@ let holdout (dataDir: string) (resultsDir: string) =
           testPeriod =
             "Kaggle's test sales (May-Nov 2012) come without prices in the course's copy of the data, so they are not scored." }
     Json.write (Path.Combine(resultsDir, "holdout.json")) result
-    Json.write (Path.Combine(resultsDir, "errors.json")) (errorAnalysis finalPred p gbm train valid)
     result
