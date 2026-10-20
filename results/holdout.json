@@ -1,0 +1,182 @@
+{
+  "fit": "all of Train.csv (sales to 2011-12-31)",
+  "heldOut": "Valid.csv with ValidSolution.csv (sales 2012-01-01 to 2012-04-30)",
+  "fitSales": 401125,
+  "heldOutSales": 11573,
+  "settings": {
+    "order": "alphabetical",
+    "features": {
+      "course": true,
+      "engineered": false,
+      "identifiers": false
+    },
+    "gbm": {
+      "trees": 2500,
+      "learningRate": 0.05,
+      "leaves": 255,
+      "maxDepth": 20,
+      "minLeaf": 20,
+      "lambda": 1,
+      "rowFraction": 0.7,
+      "colFraction": 0.8,
+      "patience": 250,
+      "seed": 2026
+    },
+    "gbmTrees": 1348,
+    "forest": {
+      "trees": 90,
+      "maxSamples": 0,
+      "featureFraction": 0.5,
+      "minLeaf": 2,
+      "maxLeaves": 2147483647,
+      "seed": 2026
+    },
+    "blendWeight": 0.75
+  },
+  "baselines": [
+    {
+      "name": "Median price of all sales",
+      "settings": "",
+      "trees": 0,
+      "score": {
+        "rmsle": 0.7441,
+        "maeDollars": 19697,
+        "r2": -0.1832,
+        "medianAbsPctError": 52.5,
+        "n": 11573
+      },
+      "seconds": 0
+    },
+    {
+      "name": "Median by product group",
+      "settings": "",
+      "trees": 0,
+      "score": {
+        "rmsle": 0.6223,
+        "maeDollars": 17245,
+        "r2": 0.0802,
+        "medianAbsPctError": 41.2,
+        "n": 11573
+      },
+      "seconds": 0
+    },
+    {
+      "name": "Median by product group and year made",
+      "settings": "at least 20 sales",
+      "trees": 0,
+      "score": {
+        "rmsle": 0.5705,
+        "maeDollars": 14269,
+        "r2": 0.3792,
+        "medianAbsPctError": 30,
+        "n": 11573
+      },
+      "seconds": 0
+    },
+    {
+      "name": "Median by base model and year made",
+      "settings": "at least 5 sales, else group and year",
+      "trees": 0,
+      "score": {
+        "rmsle": 0.3905,
+        "maeDollars": 8966,
+        "r2": 0.7148,
+        "medianAbsPctError": 19.3,
+        "n": 11573
+      },
+      "seconds": 0
+    }
+  ],
+  "models": [
+    {
+      "name": "Boosting (from scratch)",
+      "settings": "rate 0.05, 255 leaves, min leaf 20, lambda 1, rows 0.7, features 0.8",
+      "trees": 1348,
+      "score": {
+        "rmsle": 0.2297,
+        "maeDollars": 5722,
+        "r2": 0.8842,
+        "medianAbsPctError": 13.2,
+        "n": 11573
+      },
+      "seconds": 283.1
+    },
+    {
+      "name": "Random forest (from scratch)",
+      "settings": "90 trees, all rows per tree, 0.5 of features per split, min leaf 2",
+      "trees": 0,
+      "score": {
+        "rmsle": 0.2383,
+        "maeDollars": 5922,
+        "r2": 0.8742,
+        "medianAbsPctError": 13.8,
+        "n": 11573
+      },
+      "seconds": 106.9
+    }
+  ],
+  "mlnet": [
+    {
+      "name": "ML.NET LightGBM (1348 trees, 255 leaves, min leaf 20, rate 0.05)",
+      "settings": "same features, missing as -1",
+      "trees": 0,
+      "score": {
+        "rmsle": 0.2326,
+        "maeDollars": 5752,
+        "r2": 0.8829,
+        "medianAbsPctError": 13.4,
+        "n": 11573
+      },
+      "seconds": 38.6
+    },
+    {
+      "name": "ML.NET FastTree (1348 trees, 255 leaves, min leaf 20, rate 0.05)",
+      "settings": "same features, missing as -1",
+      "trees": 0,
+      "score": {
+        "rmsle": 0.232,
+        "maeDollars": 5728,
+        "r2": 0.8853,
+        "medianAbsPctError": 13.3,
+        "n": 11573
+      },
+      "seconds": 232.3
+    },
+    {
+      "name": "ML.NET FastForest (90 trees, 4096 leaves, min leaf 2)",
+      "settings": "same features, missing as -1",
+      "trees": 0,
+      "score": {
+        "rmsle": 0.2455,
+        "maeDollars": 6390,
+        "r2": 0.8529,
+        "medianAbsPctError": 15.1,
+        "n": 11573
+      },
+      "seconds": 157.9
+    }
+  ],
+  "final": {
+    "name": "Final: 0.75 boosting + 0.25 forest",
+    "settings": "weights chosen on the tuning window",
+    "trees": 0,
+    "score": {
+      "rmsle": 0.2281,
+      "maeDollars": 5681,
+      "r2": 0.8854,
+      "medianAbsPctError": 13.1,
+      "n": 11573
+    },
+    "seconds": 0
+  },
+  "trainingRmsle": 0.1346,
+  "course": {
+    "notebook": "section-3-structured-data-projects/end-to-end-bluebook-bulldozer-price-regression-v2.ipynb",
+    "model": "RandomForestRegressor(n_estimators=90, min_samples_split=5, max_features=0.5), on dollar prices",
+    "validRmsle": 0.24733,
+    "validMae": 5979,
+    "validR2": 0.88105,
+    "note": "Same Jan-Apr 2012 validation sales. The notebook chose its settings by scoring them on these sales, so its figure is not a held-out estimate."
+  },
+  "testPeriod": "Kaggle's test sales (May-Nov 2012) come without prices in the course's copy of the data, so they are not scored."
+}

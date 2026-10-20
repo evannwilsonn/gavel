@@ -1,0 +1,104 @@
+{
+  "features": [
+    "YearMade",
+    "ageAtSale",
+    "MachineHoursCurrentMeter",
+    "saleElapsed",
+    "saleMonth",
+    "ProductGroup",
+    "fiBaseModel",
+    "fiSecondaryDesc",
+    "fiProductClassDesc",
+    "state",
+    "Enclosure",
+    "Blade_Type",
+    "Ripper",
+    "Thumb",
+    "Stick",
+    "Ride_Control",
+    "Hydraulics_Flow"
+  ],
+  "settings": "rate 0.1, 48 leaves, min leaf 30, lambda 1, rows 0.7, features 0.8",
+  "trees": 400,
+  "nodes": 38000,
+  "level": 0.8,
+  "bands": [
+    {
+      "key": "all",
+      "lo": -0.2463,
+      "hi": 0.3261
+    },
+    {
+      "key": "TTT",
+      "lo": -0.2829,
+      "hi": 0.3509
+    },
+    {
+      "key": "WL",
+      "lo": -0.1954,
+      "hi": 0.3718
+    },
+    {
+      "key": "BL",
+      "lo": -0.2174,
+      "hi": 0.251
+    },
+    {
+      "key": "TEX",
+      "lo": -0.2801,
+      "hi": 0.3422
+    },
+    {
+      "key": "SSL",
+      "lo": -0.2056,
+      "hi": 0.2647
+    },
+    {
+      "key": "MG",
+      "lo": -0.2522,
+      "hi": 0.3658
+    }
+  ],
+  "heldOut": {
+    "rmsle": 0.2563,
+    "maeDollars": 6538,
+    "r2": 0.8492,
+    "medianAbsPctError": 15.5,
+    "n": 11573
+  },
+  "coverage": 0.7656,
+  "coverageByGroup": [
+    {
+      "key": "BL",
+      "n": 1986,
+      "share": 0.7925
+    },
+    {
+      "key": "MG",
+      "n": 769,
+      "share": 0.8049
+    },
+    {
+      "key": "SSL",
+      "n": 1523,
+      "share": 0.7315
+    },
+    {
+      "key": "TEX",
+      "n": 3063,
+      "share": 0.7627
+    },
+    {
+      "key": "TTT",
+      "n": 2062,
+      "share": 0.7852
+    },
+    {
+      "key": "WL",
+      "n": 2170,
+      "share": 0.7364
+    }
+  ],
+  "tuningRmsle": 0.2448,
+  "modelBytes": 817157
+}

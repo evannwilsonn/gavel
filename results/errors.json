@@ -1,0 +1,304 @@
+{
+  "byProductGroup": [
+    {
+      "key": "BL",
+      "n": 1986,
+      "rmsle": 0.1764,
+      "bias": -0.0329
+    },
+    {
+      "key": "MG",
+      "n": 769,
+      "rmsle": 0.2291,
+      "bias": -0.0485
+    },
+    {
+      "key": "SSL",
+      "n": 1523,
+      "rmsle": 0.1981,
+      "bias": -0.0053
+    },
+    {
+      "key": "TEX",
+      "n": 3063,
+      "rmsle": 0.2424,
+      "bias": -0.0186
+    },
+    {
+      "key": "TTT",
+      "n": 2062,
+      "rmsle": 0.2554,
+      "bias": -0.0072
+    },
+    {
+      "key": "WL",
+      "n": 2170,
+      "rmsle": 0.2407,
+      "bias": -0.0081
+    }
+  ],
+  "byModelHistory": [
+    {
+      "key": "model never sold before",
+      "n": 93,
+      "rmsle": 0.3951,
+      "bias": -0.1595
+    },
+    {
+      "key": "1-9 earlier sales",
+      "n": 533,
+      "rmsle": 0.2656,
+      "bias": -0.0353
+    },
+    {
+      "key": "10-99 earlier sales",
+      "n": 2609,
+      "rmsle": 0.2475,
+      "bias": -0.0047
+    },
+    {
+      "key": "100+ earlier sales of the model",
+      "n": 8338,
+      "rmsle": 0.2163,
+      "bias": -0.0185
+    }
+  ],
+  "byYearMade": [
+    {
+      "key": "year made unknown",
+      "n": 1206,
+      "rmsle": 0.317,
+      "bias": -0.024
+    },
+    {
+      "key": "before 1990",
+      "n": 1158,
+      "rmsle": 0.2533,
+      "bias": -0.0215
+    },
+    {
+      "key": "1990s",
+      "n": 2824,
+      "rmsle": 0.2353,
+      "bias": -0.0112
+    },
+    {
+      "key": "2000 or later",
+      "n": 6385,
+      "rmsle": 0.198,
+      "bias": -0.0179
+    }
+  ],
+  "byHours": [
+    {
+      "key": "hours recorded",
+      "n": 4031,
+      "rmsle": 0.216,
+      "bias": 0.0069
+    },
+    {
+      "key": "hours not recorded",
+      "n": 7542,
+      "rmsle": 0.2343,
+      "bias": -0.0303
+    }
+  ],
+  "bySaleMonth": [
+    {
+      "key": "2012-01",
+      "n": 1231,
+      "rmsle": 0.2405,
+      "bias": -0.0544
+    },
+    {
+      "key": "2012-02",
+      "n": 3867,
+      "rmsle": 0.2216,
+      "bias": -0.0149
+    },
+    {
+      "key": "2012-03",
+      "n": 4779,
+      "rmsle": 0.2287,
+      "bias": -0.0103
+    },
+    {
+      "key": "2012-04",
+      "n": 1696,
+      "rmsle": 0.2318,
+      "bias": -0.0157
+    }
+  ],
+  "largestMisses": [
+    {
+      "model": "IT28F",
+      "group": "WL",
+      "yearMade": "2008",
+      "state": "Florida",
+      "saleDate": "2/6/2012",
+      "price": 11000,
+      "estimate": 59841
+    },
+    {
+      "model": "2554",
+      "group": "TEX",
+      "yearMade": "1000",
+      "state": "Louisiana",
+      "saleDate": "3/22/2012",
+      "price": 90000,
+      "estimate": 18733
+    },
+    {
+      "model": "9040",
+      "group": "TEX",
+      "yearMade": "1000",
+      "state": "New Jersey",
+      "saleDate": "3/29/2012",
+      "price": 72500,
+      "estimate": 16338
+    },
+    {
+      "model": "962G",
+      "group": "WL",
+      "yearMade": "2000",
+      "state": "Florida",
+      "saleDate": "2/13/2012",
+      "price": 16500,
+      "estimate": 66515
+    },
+    {
+      "model": "455G",
+      "group": "TTT",
+      "yearMade": "2008",
+      "state": "Texas",
+      "saleDate": "3/8/2012",
+      "price": 8500,
+      "estimate": 34006
+    },
+    {
+      "model": "521E",
+      "group": "WL",
+      "yearMade": "1000",
+      "state": "Florida",
+      "saleDate": "1/28/2012",
+      "price": 95000,
+      "estimate": 25209
+    },
+    {
+      "model": "928G",
+      "group": "WL",
+      "yearMade": "2005",
+      "state": "Florida",
+      "saleDate": "1/28/2012",
+      "price": 16000,
+      "estimate": 58754
+    },
+    {
+      "model": "L60E",
+      "group": "WL",
+      "yearMade": "1000",
+      "state": "Mississippi",
+      "saleDate": "3/28/2012",
+      "price": 69000,
+      "estimate": 19535
+    },
+    {
+      "model": "WA200",
+      "group": "WL",
+      "yearMade": "1000",
+      "state": "Florida",
+      "saleDate": "2/6/2012",
+      "price": 59000,
+      "estimate": 17538
+    },
+    {
+      "model": "1150K",
+      "group": "TTT",
+      "yearMade": "1000",
+      "state": "Louisiana",
+      "saleDate": "3/22/2012",
+      "price": 127500,
+      "estimate": 39021
+    },
+    {
+      "model": "LS5800",
+      "group": "TEX",
+      "yearMade": "1997",
+      "state": "Florida",
+      "saleDate": "2/13/2012",
+      "price": 10000,
+      "estimate": 31139
+    },
+    {
+      "model": "892ELC",
+      "group": "TEX",
+      "yearMade": "1000",
+      "state": "Ohio",
+      "saleDate": "4/5/2012",
+      "price": 60000,
+      "estimate": 19627
+    }
+  ],
+  "importance": [
+    {
+      "feature": "YearMade",
+      "meanAbsEffect": 0.2393
+    },
+    {
+      "feature": "Coupler_System",
+      "meanAbsEffect": 0.1412
+    },
+    {
+      "feature": "fiProductClassDesc",
+      "meanAbsEffect": 0.1344
+    },
+    {
+      "feature": "ProductSize",
+      "meanAbsEffect": 0.1208
+    },
+    {
+      "feature": "saleYear",
+      "meanAbsEffect": 0.1135
+    },
+    {
+      "feature": "Enclosure",
+      "meanAbsEffect": 0.101
+    },
+    {
+      "feature": "fiSecondaryDesc",
+      "meanAbsEffect": 0.0753
+    },
+    {
+      "feature": "ModelID",
+      "meanAbsEffect": 0.0591
+    },
+    {
+      "feature": "Grouser_Tracks",
+      "meanAbsEffect": 0.0438
+    },
+    {
+      "feature": "fiModelDesc",
+      "meanAbsEffect": 0.0431
+    },
+    {
+      "feature": "fiModelDescriptor",
+      "meanAbsEffect": 0.0341
+    },
+    {
+      "feature": "fiBaseModel",
+      "meanAbsEffect": 0.0252
+    },
+    {
+      "feature": "Hydraulics",
+      "meanAbsEffect": 0.024
+    },
+    {
+      "feature": "saleDayofyear",
+      "meanAbsEffect": 0.0226
+    },
+    {
+      "feature": "datasource",
+      "meanAbsEffect": 0.0183
+    }
+  ]
+}
