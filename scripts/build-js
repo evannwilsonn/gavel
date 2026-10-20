@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Compiles src/Core (F#) to JavaScript with Fable, then bundles it with the page script
+# (web/app.js) into docs/gavel.js. Needs the .NET 8 SDK and Node 18+.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+dotnet tool restore
+dotnet fable src/Core/Gavel.Core.fsproj -o fable-out --noCache
+npx --yes esbuild@0.24.0 web/app.js --bundle --format=esm --minify --target=es2020 --outfile=docs/gavel.js --log-level=warning
+echo "wrote docs/gavel.js ($(wc -c < docs/gavel.js) bytes)"

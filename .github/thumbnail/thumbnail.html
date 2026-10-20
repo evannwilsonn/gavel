@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gavel thumbnail</title>
+<!-- Rendered by scripts/thumbnail.py, which fills the {{tokens}} from results/*.json. -->
+<style>
+@font-face { font-family: "Shoulders"; src: url("../../docs/fonts/BigShoulders-Bold.ttf"); font-weight: 700; }
+@font-face { font-family: "Plate Mono"; src: url("../../docs/fonts/RedHatMono-Bold.ttf"); font-weight: 700; }
+@font-face { font-family: "Plate Mono"; src: url("../../docs/fonts/RedHatMono-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "Grease Pencil"; src: url("../../docs/fonts/NothingYouCouldDo-Regular.ttf"); }
+html, body { margin: 0; width: 1200px; height: 627px; overflow: hidden; }
+body {
+  background:
+    radial-gradient(70% 90% at 8% 0%, rgba(255, 168, 80, .30), transparent 60%),
+    radial-gradient(50% 60% at 100% 100%, rgba(255, 150, 60, .12), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .9 0 0 0 0 .8 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E"),
+    #0b0d0e;
+  font-family: "Plate Mono", monospace;
+}
+.plate {
+  position: absolute; left: 58px; top: 44px; width: 1090px; height: 536px;
+  transform: rotate(-2.6deg);
+  border-radius: 16px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.28) 0 1px, transparent 1px 2px, rgba(40,48,56,.05) 2px 3px, transparent 3px 5px),
+    linear-gradient(168deg, #eceff2 0%, #d2d6da 40%, #dfe2e5 66%, #cdd1d5 100%);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0,0,0,.35), 0 3px 6px rgba(0,0,0,.6), 0 40px 70px -10px rgba(0,0,0,.85);
+}
+.plate::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; opacity: .55; mix-blend-mode: overlay;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='240'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .9' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.6 -.55'/%3E%3C/filter%3E%3Crect width='600' height='240' filter='url(%23b)'/%3E%3C/svg%3E");
+}
+.plate::before {
+  content: ""; position: absolute; inset: 24px; border: 1.5px solid rgba(22,26,30,.45); border-radius: 8px;
+  box-shadow: 0 1.5px 0 rgba(255,255,255,.8), inset 0 1.5px 0 rgba(255,255,255,.8); z-index: 1;
+}
+.rivet { position: absolute; width: 26px; height: 26px; border-radius: 50%; z-index: 2;
+  background: radial-gradient(circle at 34% 30%, #fff 0 8%, #d4d8dc 26%, #8d9399 64%, #5d6369 92%);
+  box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 0 0 2px rgba(0,0,0,.12), 0 0 0 4px rgba(255,255,255,.7); }
+.tl { top: 10px; left: 10px; } .tr { top: 10px; right: 10px; } .bl { bottom: 10px; left: 10px; } .br { bottom: 10px; right: 10px; }
+.in { position: absolute; inset: 48px 56px 40px; z-index: 2; color: #15181b; }
+.stamp { text-shadow: 0 1.5px 0 rgba(255,255,255,.8), 0 -1px 0 rgba(0,0,0,.25); }
+.small { font: 700 15px/1 "Plate Mono"; letter-spacing: .16em; color: #3a4047; text-transform: uppercase; }
+.word { font: 700 226px/.8 "Shoulders"; letter-spacing: .04em; margin: 22px 0 0 -6px; }
+.rows { position: absolute; right: 0; top: 4px; width: 400px; border-top: 1.5px solid rgba(22,26,30,.45); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.8); }
+.row { display: flex; justify-content: space-between; align-items: baseline; padding: 13px 2px 12px; border-bottom: 1.5px solid rgba(22,26,30,.45); box-shadow: 0 1.5px 0 rgba(255,255,255,.8); }
+.row span { font: 700 14px/1.2 "Plate Mono"; letter-spacing: .13em; color: #3a4047; }
+.row b { font: 700 40px/1 "Shoulders"; letter-spacing: .04em; }
+.row b.hot { color: #a03806; }
+.dymo {
+  position: absolute; left: 0; bottom: 30px; transform: rotate(-1deg);
+  font: 700 25px/1 "Plate Mono"; letter-spacing: .2em; color: #f3f3ef; padding: 10px 22px;
+  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,0) 38%, rgba(0,0,0,.28)), #161616;
+  border-radius: 4px; box-shadow: 0 2px 2px rgba(0,0,0,.5), 0 4px 6px rgba(0,0,0,.2);
+  text-shadow: 0 -1px 0 rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.25);
+}
+.fsharp { position: absolute; left: 4px; top: 316px; font: 700 15px/1 "Plate Mono"; letter-spacing: .16em; color: #3a4047; }
+.fsharp b { color: #15181b; }
+.tag {
+  position: absolute; right: 54px; bottom: -34px; width: 168px; height: 212px; z-index: 3;
+  transform: rotate(8deg);
+  background: linear-gradient(170deg, #e2701f, #c9530c);
+  clip-path: polygon(22% 0, 78% 0, 100% 12%, 100% 100%, 0 100%, 0 12%);
+  filter: drop-shadow(0 8px 10px rgba(0,0,0,.5));
+  color: #1b0b02; text-align: center;
+}
+.tag .hole { position: absolute; top: 16px; left: 50%; width: 30px; height: 30px; margin-left: -15px; border-radius: 50%;
+  background: radial-gradient(circle, #d3d7db 0 6px, #8f3a07 6.5px, #f59a5a 9px, #b84a0a 13px, transparent 13.5px); }
+.tag .p { position: absolute; top: 58px; left: 0; right: 0; font: 700 12px/1.3 "Plate Mono"; letter-spacing: .14em; }
+.tag .h { position: absolute; top: 84px; left: 0; right: 0; font: 400 40px/1 "Grease Pencil"; color: #14183a; transform: rotate(-4deg); }
+.tag .h2 { position: absolute; top: 140px; left: 0; right: 0; font: 400 26px/1 "Grease Pencil"; color: #14183a; transform: rotate(-3deg); }
+.string { position: absolute; right: 120px; bottom: 140px; width: 90px; height: 90px; z-index: 3; overflow: visible; }
+.string path { fill: none; stroke: #efe8d6; stroke-width: 2.5; filter: drop-shadow(0 2px 1px rgba(0,0,0,.4)); }
+</style>
+</head>
+<body>
+<div class="plate">
+  <span class="rivet tl"></span><span class="rivet tr"></span><span class="rivet bl"></span><span class="rivet br"></span>
+  <div class="in">
+    <div class="small stamp">Heavy equipment &middot; auction price estimator</div>
+    <div class="word stamp">GAVEL</div>
+    <div class="fsharp stamp">TREES WRITTEN IN <b>F# &gt; JS</b> &middot; THE MODEL RUNS IN THE PAGE</div>
+    <div class="rows">
+      <div class="row stamp"><span>HELD-OUT RMSLE, 2012</span><b class="hot">{{final}}</b></div>
+      <div class="row stamp"><span>MEDIAN BASELINE</span><b>{{baseline}}</b></div>
+      <div class="row stamp"><span>COURSE NOTEBOOK</span><b>{{course}}</b></div>
+      <div class="row stamp"><span>AUCTION SALES</span><b>{{sales}}</b></div>
+    </div>
+    <div class="dymo">WHAT WILL THIS DOZER FETCH?</div>
+  </div>
+</div>
+<svg class="string" viewBox="0 0 90 90"><path d="M70 0 C 40 30, 70 50, 40 88"/></svg>
+<div class="tag"><span class="hole"></span><div class="p">LOT &middot; 2012 SALE</div><div class="h">Sold</div><div class="h2">{{n_heldout}} lots</div></div>
+</body>
+</html>

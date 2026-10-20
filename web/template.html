@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gavel: bulldozer auction price estimator</title>
+<meta name="description" content="Describe a used bulldozer, excavator or loader and get an estimated auction hammer price with a range. Gradient-boosted trees written in F#, compiled to JavaScript with Fable, running in the page.">
+<meta property="og:title" content="Gavel: bulldozer auction price estimator">
+<meta property="og:description" content="Held-out RMSLE {{final_rmsle}} on {{heldout_sales}} auction sales from early 2012. F# trees running in the browser.">
+<meta property="og:image" content="https://evannwilsonn.github.io/gavel/thumbnail.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="color-scheme" content="light dark">
+<link rel="preload" href="fonts/BigShoulders-Bold.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="fonts/RedHatMono-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<script>
+  // theme before first paint: saved choice, else the system setting
+  try { const t = localStorage.getItem("gavel-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<style>
+@font-face { font-family: "Shoulders"; src: url("fonts/BigShoulders-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Shoulders"; src: url("fonts/BigShoulders-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Plate Mono"; src: url("fonts/RedHatMono-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Plate Mono"; src: url("fonts/RedHatMono-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Grease Pencil"; src: url("fonts/NothingYouCouldDo-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+
+/* ---------- tokens: light = brushed aluminium in daylight ---------- */
+:root {
+  --yard: #bdb7ac;
+  --yard-grit: rgba(60, 50, 40, .10);
+  --alu-top: #e6e9ec;
+  --alu-mid: #d3d7db;
+  --alu-low: #dcdfe2;
+  --brush-a: rgba(255, 255, 255, .26);
+  --brush-b: rgba(40, 48, 56, .045);
+  --streak: .55;
+  --edge-hi: rgba(255, 255, 255, .9);
+  --edge-lo: rgba(30, 36, 42, .38);
+  --groove-dark: rgba(22, 26, 30, .42);
+  --groove-light: rgba(255, 255, 255, .78);
+  --enamel: #15181b;
+  --enamel-2: #3a4047;
+  --stamp-hi: rgba(255, 255, 255, .78);
+  --stamp-lo: rgba(0, 0, 0, .22);
+  --slot: rgba(24, 30, 36, .075);
+  --slot-shadow: rgba(10, 14, 18, .34);
+  --orange: #e8590c;
+  --orange-text: #a03806;
+  --panel: #bf3f0b;
+  --panel-deep: #9c3208;
+  --panel-ink: #fff5ee;
+  --minus: #2b3036;
+  --tape: #161616;
+  --tape-2: #262626;
+  --tape-ink: #f3f3ef;
+  --tape-orange: #b5420a;
+  --manila: #dcc08a;
+  --manila-2: #cfae6f;
+  --manila-ink: #2d2416;
+  --pencil: #1d2a57;
+  --rivet-1: #ffffff;
+  --rivet-2: #d4d8dc;
+  --rivet-3: #8d9399;
+  --rivet-4: #5d6369;
+  --shadow: rgba(25, 20, 12, .34);
+  --focus: #e8590c;
+  --glow: transparent;
+  color-scheme: light;
+}
+/* ---------- dark = the same plate at night in the yard ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --yard: #0c0e0f; --yard-grit: rgba(255, 220, 170, .035);
+    --alu-top: #262a2f; --alu-mid: #1c1f23; --alu-low: #212428;
+    --brush-a: rgba(255, 255, 255, .035); --brush-b: rgba(0, 0, 0, .16); --streak: .34;
+    --edge-hi: rgba(255, 255, 255, .14); --edge-lo: rgba(0, 0, 0, .7);
+    --groove-dark: rgba(0, 0, 0, .75); --groove-light: rgba(255, 255, 255, .08);
+    --enamel: #dfe3e7; --enamel-2: #a9b0b8;
+    --stamp-hi: rgba(255, 255, 255, .07); --stamp-lo: rgba(0, 0, 0, .85);
+    --slot: rgba(0, 0, 0, .32); --slot-shadow: rgba(0, 0, 0, .8);
+    --orange: #ff7a2e; --orange-text: #ff8b47; --panel: #c2470d; --panel-deep: #8e3005; --panel-ink: #fff6f0;
+    --minus: #c3c9cf;
+    --tape: #0a0a0a; --tape-2: #1b1b1b; --tape-ink: #ecece6; --tape-orange: #b8440b;
+    --manila: #bfa46f; --manila-2: #a98d58; --manila-ink: #20190e; --pencil: #16204a;
+    --rivet-1: #9aa1a8; --rivet-2: #4a5057; --rivet-3: #272b30; --rivet-4: #131619;
+    --shadow: rgba(0, 0, 0, .7); --focus: #ff7a2e; --glow: rgba(255, 160, 70, .2);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --yard: #0c0e0f; --yard-grit: rgba(255, 220, 170, .035);
+  --alu-top: #262a2f; --alu-mid: #1c1f23; --alu-low: #212428;
+  --brush-a: rgba(255, 255, 255, .035); --brush-b: rgba(0, 0, 0, .16); --streak: .34;
+  --edge-hi: rgba(255, 255, 255, .14); --edge-lo: rgba(0, 0, 0, .7);
+  --groove-dark: rgba(0, 0, 0, .75); --groove-light: rgba(255, 255, 255, .08);
+  --enamel: #dfe3e7; --enamel-2: #a9b0b8;
+  --stamp-hi: rgba(255, 255, 255, .07); --stamp-lo: rgba(0, 0, 0, .85);
+  --slot: rgba(0, 0, 0, .32); --slot-shadow: rgba(0, 0, 0, .8);
+  --orange: #ff7a2e; --orange-text: #ff8b47; --panel: #c2470d; --panel-deep: #8e3005; --panel-ink: #fff6f0;
+  --minus: #c3c9cf;
+  --tape: #0a0a0a; --tape-2: #1b1b1b; --tape-ink: #ecece6; --tape-orange: #b8440b;
+  --manila: #bfa46f; --manila-2: #a98d58; --manila-ink: #20190e; --pencil: #16204a;
+  --rivet-1: #9aa1a8; --rivet-2: #4a5057; --rivet-3: #272b30; --rivet-4: #131619;
+  --shadow: rgba(0, 0, 0, .7); --focus: #ff7a2e; --glow: rgba(255, 160, 70, .2);
+  color-scheme: dark;
+}
+
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background-color: var(--yard);
+  background-image:
+    radial-gradient(120% 70% at 12% -8%, var(--glow), transparent 62%),
+    radial-gradient(90% 60% at 100% 110%, var(--glow), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  color: var(--enamel);
+  font: 400 15px/1.5 "Plate Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 3px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.skip { position: absolute; left: 12px; top: -60px; z-index: 10; background: var(--tape); color: var(--tape-ink); padding: 8px 12px; border-radius: 3px; }
+.skip:focus { top: 12px; }
+
+.yard { max-width: 1240px; margin: 0 auto; padding: 36px 28px 56px; }
+
+/* ---------- the plate ---------- */
+.plate {
+  position: relative;
+  border-radius: 12px;
+  padding: 30px;
+  background-color: var(--alu-mid);
+  background-image:
+    repeating-linear-gradient(180deg, var(--brush-a) 0 1px, transparent 1px 2px, var(--brush-b) 2px 3px, transparent 3px 5px),
+    linear-gradient(172deg, var(--alu-top) 0%, var(--alu-mid) 38%, var(--alu-low) 64%, var(--alu-mid) 100%);
+  box-shadow:
+    inset 0 1px 0 var(--edge-hi),
+    inset 0 -1px 0 var(--edge-lo),
+    inset 1px 0 0 var(--edge-hi),
+    inset -1px 0 0 var(--edge-lo),
+    0 1px 0 rgba(0, 0, 0, .25),
+    0 3px 6px var(--shadow),
+    0 22px 40px -14px var(--shadow);
+}
+/* brushing streaks: stretched noise, strength set per theme */
+.plate::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='240'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .9' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.6 -.55'/%3E%3C/filter%3E%3Crect width='600' height='240' filter='url(%23b)'/%3E%3C/svg%3E");
+  background-size: 600px 240px;
+  opacity: var(--streak);
+  mix-blend-mode: overlay;
+}
+.plate > .inner, .plate > .rivet { z-index: 1; }
+/* engraved inset border */
+.plate::before {
+  content: "";
+  position: absolute;
+  inset: 16px;
+  border: 1px solid var(--groove-dark);
+  border-radius: 6px;
+  box-shadow: 0 1px 0 var(--groove-light), inset 0 1px 0 var(--groove-light);
+  pointer-events: none;
+  z-index: 1;
+}
+.rivet {
+  position: absolute;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, var(--rivet-1) 0 8%, var(--rivet-2) 26%, var(--rivet-3) 64%, var(--rivet-4) 92%);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .45), 0 0 0 1.5px rgba(0, 0, 0, .14), 0 0 0 3px var(--groove-light), inset 0 -1px 1px rgba(0, 0, 0, .35);
+}
+.rivet.tl { top: 7px; left: 7px; } .rivet.tr { top: 7px; right: 7px; }
+.rivet.bl { bottom: 7px; left: 7px; } .rivet.br { bottom: 7px; right: 7px; }
+
+/* stamped / etched text: dark enamel in a recess, lit from above */
+.stamp, .wordmark, .fields dt, .fields dd, .spec th, .spec td, .tick-label {
+  text-shadow: 0 1px 0 var(--stamp-hi), 0 -1px 0 var(--stamp-lo);
+}
+.stamp-sm { font: 700 11.5px/1.3 "Plate Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--enamel-2); margin: 0; text-shadow: 0 1px 0 var(--stamp-hi); }
+
+.inner { position: relative; padding: 18px 24px 22px; }
+
+/* header */
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-bottom: 14px; }
+.wordmark {
+  font: 700 clamp(64px, 11vw, 132px)/.82 "Shoulders", "Arial Narrow", sans-serif;
+  letter-spacing: .06em;
+  margin: 6px 0 8px -4px;
+  color: var(--enamel);
+}
+.maker .stamp-sm + .wordmark { margin-top: 10px; }
+.head-right { display: grid; justify-items: end; gap: 10px; text-align: right; }
+
+/* the day/night switch, a stamped toggle */
+.toggle {
+  display: inline-flex; align-items: center; gap: 10px;
+  font: 700 12px/1 "Plate Mono", monospace; letter-spacing: .14em; color: var(--enamel);
+  background: none; border: 0; padding: 4px; cursor: pointer;
+}
+.toggle .track {
+  width: 46px; height: 24px; border-radius: 12px; position: relative;
+  background: var(--slot);
+  box-shadow: inset 0 2px 3px var(--slot-shadow), 0 1px 0 var(--groove-light);
+}
+.toggle .knob {
+  position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, var(--rivet-1) 0 8%, var(--rivet-2) 30%, var(--rivet-3) 70%, var(--rivet-4));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+  transition: transform .18s ease;
+}
+.toggle[aria-pressed="true"] .knob { transform: translateX(22px); }
+.toggle .on { color: var(--orange-text); }
+
+/* ---------- data plate fields ---------- */
+.fields {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1.25fr 1.15fr .7fr .8fr 1.6fr;
+  border-top: 1px solid var(--groove-dark);
+  border-bottom: 1px solid var(--groove-dark);
+  box-shadow: 0 1px 0 var(--groove-light), inset 0 1px 0 var(--groove-light);
+}
+.fields > div { padding: 10px 14px 12px; min-width: 0; }
+.fields > div + div { border-left: 1px solid var(--groove-dark); box-shadow: inset 1px 0 0 var(--groove-light); }
+.fields dt { font: 700 11.5px/1 "Plate Mono", monospace; letter-spacing: .16em; color: var(--enamel-2); }
+.fields dd {
+  margin: 8px 0 0;
+  font: 700 clamp(22px, 2.6vw, 30px)/1 "Shoulders", sans-serif;
+  letter-spacing: .05em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fields dd.mono { font: 700 clamp(15px, 1.6vw, 19px)/1.3 "Plate Mono", monospace; letter-spacing: .06em; padding-top: 3px; }
+
+/* ---------- DYMO embossed label tape ---------- */
+.dymo {
+  display: inline-flex; align-items: center;
+  margin: 0;
+  padding: 5px 13px 5px;
+  font: 700 13px/1.05 "Plate Mono", monospace;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--tape-ink);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, 0) 38%, rgba(0, 0, 0, .25) 100%),
+    var(--tape);
+  border-radius: 3px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .45), 0 2px 3px rgba(0, 0, 0, .18), inset 0 0 0 1px rgba(255, 255, 255, .04);
+  transform: rotate(var(--tilt, -.6deg));
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, .7), 0 1px 0 rgba(255, 255, 255, .22);
+  position: relative;
+}
+/* the cut ends: a slightly rounded, uneven trim */
+.dymo::before, .dymo::after {
+  content: ""; position: absolute; top: 2px; bottom: 2px; width: 3px; border-radius: 2px;
+  background: rgba(255, 255, 255, .06);
+}
+.dymo::before { left: 3px; } .dymo::after { right: 3px; }
+.dymo .ch { display: inline-block; transform: translateY(var(--dy, 0)); }
+.dymo.orange { background: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0) 40%, rgba(0, 0, 0, .22)), var(--tape-orange); color: #fff; }
+.dymo.small { font-size: 11.5px; padding: 3px 9px; letter-spacing: .17em; }
+h2.dymo, h3.dymo { font-size: 13px; }
+
+/* ---------- the works: form | readout | tag ---------- */
+.works {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr) 232px;
+  gap: 30px;
+  padding-top: 26px;
+  align-items: start;
+}
+
+/* form */
+.machine { display: grid; gap: 16px; justify-items: stretch; }
+.machine > h2.dymo { justify-self: start; }
+.machine fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.row { display: grid; gap: 7px; }
+.row.two { grid-template-columns: 1fr 1fr; gap: 14px; }
+.row.two > div { display: grid; gap: 7px; min-width: 0; }
+.machine label, .machine legend { justify-self: start; }
+.machine .dymo { font-size: 11.5px; padding: 3px 9px; letter-spacing: .16em; }
+.hint { margin: 0; font-size: 12.5px; color: var(--enamel-2); }
+
+.slot, .machine select, .machine input[type="number"] {
+  width: 100%;
+  font: 400 15px/1.2 "Plate Mono", monospace;
+  color: var(--enamel);
+  background: var(--slot);
+  border: 0;
+  border-radius: 4px;
+  padding: 10px 12px;
+  box-shadow: inset 0 2px 3px var(--slot-shadow), inset 0 0 0 1px rgba(0, 0, 0, .09), 0 1px 0 var(--groove-light);
+  appearance: none; -webkit-appearance: none; -moz-appearance: textfield;
+  min-height: 42px;
+}
+.machine select {
+  padding-right: 34px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--enamel-2) 50%),
+    linear-gradient(135deg, var(--enamel-2) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  background-color: var(--slot);
+  text-overflow: ellipsis;
+}
+.machine select option { background: var(--alu-mid); color: var(--enamel); }
+.machine input::-webkit-outer-spin-button, .machine input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.machine select:focus-visible, .machine input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* product group: six stamped keys */
+.keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.keys input { position: absolute; opacity: 0; pointer-events: none; }
+.keys label {
+  display: grid; gap: 2px; justify-items: start;
+  padding: 8px 10px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(0, 0, 0, .05));
+  box-shadow: 0 1px 0 var(--groove-light) inset, 0 0 0 1px var(--groove-dark), 0 1px 0 var(--groove-light);
+  justify-self: stretch;
+}
+.keys .code { font: 700 20px/1 "Shoulders", sans-serif; letter-spacing: .08em; }
+.keys .what { font-size: 11px; line-height: 1.2; color: var(--enamel-2); }
+.keys input:checked + label {
+  background: var(--slot);
+  box-shadow: inset 0 2px 4px var(--slot-shadow), 0 0 0 1px var(--groove-dark), 0 1px 0 var(--groove-light);
+}
+.keys input:checked + label .code { color: var(--orange-text); }
+.keys input:focus-visible + label { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.opts { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+.opts:empty { display: none; }
+.opts > div { display: grid; gap: 7px; min-width: 0; }
+
+/* ---------- readout ---------- */
+.readout { display: grid; gap: 22px; min-width: 0; }
+.panel {
+  position: relative;
+  border-radius: 6px;
+  padding: 16px 20px 18px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Cfilter id='e'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .18 0'/%3E%3C/filter%3E%3Crect width='300' height='120' filter='url(%23e)'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, var(--panel-deep), var(--panel) 22%, var(--panel) 80%, var(--panel-deep));
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, .45), inset 0 -1px 0 rgba(255, 255, 255, .12), 0 1px 0 var(--groove-light), 0 0 0 1px var(--groove-dark);
+  color: var(--panel-ink);
+}
+.panel .label { margin: 0; font: 700 12.5px/1 "Plate Mono", monospace; letter-spacing: .2em; text-shadow: 0 -1px 0 rgba(0, 0, 0, .45); }
+.price {
+  margin: 8px 0 0;
+  font: 700 clamp(64px, 8.5vw, 104px)/.86 "Shoulders", sans-serif;
+  letter-spacing: .03em;
+  font-variant-numeric: tabular-nums;
+  /* raised bare metal letters in the enamel */
+  color: var(--panel-ink);
+  text-shadow: 0 -1px 0 rgba(255, 255, 255, .35), 0 2px 0 rgba(70, 20, 0, .55), 0 3px 6px rgba(0, 0, 0, .25);
+}
+.price.pressed { animation: press .26s ease-out; }
+@keyframes press { 0% { transform: translateY(2px) scale(.985); text-shadow: 0 0 0 rgba(0,0,0,0); } 100% { transform: none; } }
+.panel .range { margin: 10px 0 0; font: 700 14px/1.3 "Plate Mono", monospace; letter-spacing: .06em; }
+.panel .wait { font-size: 13px; letter-spacing: .1em; }
+
+.scale { margin: 0; }
+.scale svg { display: block; max-width: 100%; overflow: visible; }
+.scale figcaption { margin-top: 6px; font-size: 13px; color: var(--enamel-2); }
+.ruler-body { fill: var(--slot); }
+.tick { stroke: var(--enamel); stroke-width: 1; shape-rendering: crispEdges; }
+.tick-hi { stroke: var(--groove-light); stroke-width: 1; shape-rendering: crispEdges; }
+.tick-label { fill: var(--enamel); font: 700 11px "Plate Mono", monospace; }
+.band { fill: var(--orange); opacity: .9; }
+.tick-label.on-band { fill: #1a0b02; text-shadow: none; }
+.band-hatch { stroke: rgba(0,0,0,.18); stroke-width: 1; }
+.marker { fill: var(--enamel); }
+.marker-line { stroke: var(--enamel); stroke-width: 2; }
+.band-label { fill: var(--orange-text); font: 700 12px "Plate Mono", monospace; }
+.est-label { fill: var(--enamel); font: 700 13px "Plate Mono", monospace; }
+
+.moved { display: grid; gap: 12px; }
+.moved .head-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.legend { display: flex; gap: 14px; font-size: 12.5px; color: var(--enamel-2); }
+.legend b { font-weight: 700; }
+.legend .up b { color: var(--orange-text); }
+.tornado { display: grid; gap: 0; }
+.tornado svg { display: block; max-width: 100%; overflow: visible; }
+.t-label { fill: var(--enamel); font: 700 12.5px "Plate Mono", monospace; letter-spacing: .04em; }
+.t-value { font: 700 12.5px "Plate Mono", monospace; }
+.t-value.up { fill: var(--orange-text); }
+.t-value.down { fill: var(--enamel); }
+.bar-up { fill: var(--orange); }
+.bar-down { fill: var(--minus); }
+.bar-recess { fill: var(--slot); }
+.axis { stroke: var(--enamel); stroke-width: 1.5; }
+.rule-dark { stroke: var(--groove-dark); stroke-width: 1; shape-rendering: crispEdges; }
+.rule-light { stroke: var(--groove-light); stroke-width: 1; shape-rendering: crispEdges; }
+.note { margin: 0; font-size: 13px; color: var(--enamel-2); }
+.note strong { color: var(--enamel); }
+
+/* ---------- the lot tag (manila, punched, strung) ---------- */
+.tag-col { position: relative; padding-top: 34px; margin-right: -56px; }
+.string { position: absolute; top: -26px; left: 50%; width: 120px; height: 82px; transform: translateX(-46%); overflow: visible; pointer-events: none; }
+.string path { fill: none; stroke: #e9e2d0; stroke-width: 2; stroke-linecap: round; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+.hook { position: absolute; top: -32px; left: calc(50% - 8px); width: 16px; height: 16px; }
+.tag {
+  position: relative;
+  transform: rotate(3.2deg);
+  transform-origin: 50% 0;
+  padding: 58px 18px 20px;
+  color: var(--manila-ink);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.6' numOctaves='3' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .1 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23p)'/%3E%3C/svg%3E"),
+    linear-gradient(170deg, var(--manila), var(--manila-2));
+  clip-path: polygon(22% 0, 78% 0, 100% 9%, 100% 100%, 0 100%, 0 9%);
+  filter: drop-shadow(0 6px 8px var(--shadow));
+}
+.tag-wrap { filter: drop-shadow(0 8px 10px var(--shadow)); }
+.tag .hole {
+  position: absolute; top: 16px; left: 50%; width: 26px; height: 26px; margin-left: -13px; border-radius: 50%;
+  background: radial-gradient(circle, var(--yard) 0 5.5px, #b89558 6px, #e6cf9f 8px, #c9a766 12px, transparent 12.5px);
+}
+.tag .printed { margin: 0; font: 700 10.5px/1.35 "Plate Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--manila-ink); }
+.tag .lot-no { margin: 6px 0 2px; font: 400 34px/1 "Grease Pencil", cursive; color: var(--pencil); transform: rotate(-3deg); }
+.tag .rule { border: 0; border-top: 1px dashed rgba(45, 36, 22, .45); margin: 12px 0; }
+.tag dl { margin: 0; display: grid; gap: 7px; }
+.tag dt { font: 700 10.5px/1.2 "Plate Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
+.tag dd { margin: 0; }
+.tag .hand { font: 400 24px/1.05 "Grease Pencil", cursive; color: var(--pencil); }
+.tag .typed { font: 700 15px/1.2 "Plate Mono", monospace; }
+.tag .verdict { font: 700 12px/1.35 "Plate Mono", monospace; }
+.tag .small { margin: 0; font-size: 11.5px; line-height: 1.4; }
+.pull {
+  margin-top: 16px; cursor: pointer; border: 0;
+  font: 700 12px/1.1 "Plate Mono", monospace; letter-spacing: .15em; text-transform: uppercase;
+  --tilt: -1deg;
+}
+.pull:hover { filter: brightness(1.12); }
+.pull:active { transform: rotate(-1deg) translateY(1px); }
+
+/* ---------- plate footer ---------- */
+.plate-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; margin-top: 26px; padding-top: 12px; border-top: 1px solid var(--groove-dark); box-shadow: inset 0 1px 0 var(--groove-light); }
+
+/* ---------- the spec plate ---------- */
+.plate.spec-plate { margin-top: 44px; }
+.spec-plate .inner { padding-bottom: 18px; }
+.spec-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px 20px; margin-bottom: 12px; }
+.spec-head h2 { margin: 0; font: 700 clamp(30px, 3.6vw, 44px)/.95 "Shoulders", sans-serif; letter-spacing: .06em; }
+.spec-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 28px 40px; }
+.spec { width: 100%; border-collapse: collapse; }
+.spec caption { text-align: left; padding: 0 0 8px; }
+.spec th, .spec td { padding: 9px 4px 9px 0; vertical-align: baseline; border-bottom: 1px solid var(--groove-dark); box-shadow: 0 1px 0 var(--groove-light); }
+.spec th { text-align: left; font: 700 12px/1.35 "Plate Mono", monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--enamel-2); }
+.spec td { text-align: right; font: 700 18px/1.2 "Plate Mono", monospace; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.spec td.big { font: 700 26px/1 "Shoulders", sans-serif; letter-spacing: .04em; }
+.spec td.hot { color: var(--orange-text); }
+.spec .sub { display: block; font: 400 12px/1.35 "Plate Mono", monospace; letter-spacing: 0; text-transform: none; color: var(--enamel-2); margin-top: 2px; }
+.spec.groups td { font-size: 15px; }
+.spec-notes { margin-top: 22px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px 28px; }
+.spec-notes p { margin: 0; font-size: 13.5px; color: var(--enamel); }
+.spec-notes .dymo { margin-bottom: 8px; }
+
+.credits { max-width: 920px; margin: 34px auto 0; font-size: 13px; color: var(--enamel); line-height: 1.6; text-align: center; }
+.credits p { margin: 6px 0; }
+@media (prefers-color-scheme: light) { .credits { color: #1f1a12; } }
+:root[data-theme="light"] .credits { color: #1f1a12; }
+
+/* ---------- widths ---------- */
+@media (max-width: 1180px) {
+  .works { grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); }
+  .tag-col { grid-column: 1 / -1; margin: 10px auto 0; width: min(100%, 520px); padding-top: 40px; }
+  .tag { transform: rotate(1.2deg); padding-top: 22px; padding-left: 64px; clip-path: polygon(0 18%, 8% 0, 100% 0, 100% 100%, 8% 100%, 0 82%); }
+  .tag .hole { top: 50%; left: 30px; margin-top: -13px; }
+  .string { display: none; }
+  .hook { display: none; }
+}
+@media (max-width: 900px) {
+  .fields { grid-template-columns: 1fr 1fr 1fr; }
+  .fields > div:nth-child(4) { border-left: 0; box-shadow: none; }
+  .fields > div:nth-child(n+4) { border-top: 1px solid var(--groove-dark); }
+  .fields > div:nth-child(5) { grid-column: span 2; }
+  .works { grid-template-columns: 1fr; }
+  .spec-grid { grid-template-columns: 1fr; }
+  .spec-notes { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .yard { padding: 16px 10px 40px; }
+  .plate { padding: 14px; border-radius: 10px; }
+  .plate::before { inset: 8px; }
+  .rivet { width: 13px; height: 13px; }
+  .rivet.tl { top: 3px; left: 3px; } .rivet.tr { top: 3px; right: 3px; }
+  .rivet.bl { bottom: 3px; left: 3px; } .rivet.br { bottom: 3px; right: 3px; }
+  .inner { padding: 12px 10px 14px; }
+  .head { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .head-right { justify-items: start; text-align: left; }
+  .fields { grid-template-columns: 1fr 1fr; }
+  .fields > div:nth-child(n) { border-left: 0; box-shadow: none; }
+  .fields > div:nth-child(2n) { border-left: 1px solid var(--groove-dark); }
+  .fields > div:nth-child(n+3) { border-top: 1px solid var(--groove-dark); }
+  .fields > div:nth-child(5) { grid-column: 1 / -1; border-left: 0; }
+  .fields > div { padding: 9px 10px 10px; }
+  .keys { grid-template-columns: repeat(2, 1fr); }
+  .row.two, .opts { grid-template-columns: 1fr; }
+  .panel { padding: 14px 14px 16px; }
+  .tag { padding-left: 56px; padding-right: 14px; }
+  .tag-col { margin-right: 0; }
+  .spec td.big { font-size: 22px; }
+  .spec td { font-size: 15px; }
+}
+.ticket {
+  position: fixed; left: 50%; bottom: 12px; z-index: 5; transform: translate(-50%, 140%) rotate(-.8deg);
+  font-size: 14px; padding: 8px 14px; letter-spacing: .14em; transition: transform .2s ease; display: none;
+}
+.ticket.show { transform: translate(-50%, 0) rotate(-.8deg); }
+@media (max-width: 900px) { .ticket { display: inline-flex; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#machine">Skip to the estimator</a>
+<main class="yard">
+
+<article class="plate main-plate" aria-labelledby="title">
+  <span class="rivet tl" aria-hidden="true"></span><span class="rivet tr" aria-hidden="true"></span>
+  <span class="rivet bl" aria-hidden="true"></span><span class="rivet br" aria-hidden="true"></span>
+  <div class="inner">
+    <header class="head">
+      <div class="maker">
+        <p class="stamp-sm">Heavy equipment &middot; auction price estimator</p>
+        <h1 id="title" class="wordmark stamp">GAVEL</h1>
+        <p class="stamp-sm">Blue Book for Bulldozers &middot; F# &gt; JS &middot; runs in this page</p>
+      </div>
+      <div class="head-right">
+        <button class="toggle" id="theme" type="button" aria-pressed="false" aria-label="Night plate">
+          <span class="off">DAY</span><span class="track" aria-hidden="true"><span class="knob"></span></span><span class="on">NIGHT</span>
+        </button>
+        <p class="stamp-sm">Trained on {{train_sales}} sales &middot; 1989&ndash;2011</p>
+      </div>
+    </header>
+
+    <dl class="fields" aria-label="Data plate for the machine described below">
+      <div><dt>MODEL</dt><dd id="pl-model">&mdash;</dd></div>
+      <div><dt>SERIAL No.</dt><dd id="pl-serial" class="mono">&mdash;</dd></div>
+      <div><dt>YEAR</dt><dd id="pl-year">&mdash;</dd></div>
+      <div><dt>HOURS</dt><dd id="pl-hours">&mdash;</dd></div>
+      <div><dt>WEIGHT CLASS</dt><dd id="pl-class" class="mono">&mdash;</dd></div>
+    </dl>
+
+    <div class="works">
+      <form id="machine" class="machine" aria-labelledby="describe" autocomplete="off">
+        <h2 class="dymo" id="describe" data-dymo>Describe the machine</h2>
+        <fieldset>
+          <legend class="dymo" data-dymo>Product group</legend>
+          <div class="keys" id="groups"></div>
+        </fieldset>
+        <div class="row two">
+          <div><label class="dymo" for="f-model" data-dymo>Model</label><select id="f-model"></select></div>
+          <div><label class="dymo" for="f-series" data-dymo>Series</label><select id="f-series"></select></div>
+        </div>
+        <div class="row"><label class="dymo" for="f-class" data-dymo>Size class</label><select id="f-class"></select></div>
+        <div class="row two">
+          <div><label class="dymo" for="f-year" data-dymo>Year made</label><input id="f-year" type="number" inputmode="numeric" min="1950" max="2012" placeholder="unknown"></div>
+          <div><label class="dymo" for="f-hours" data-dymo>Hours</label><input id="f-hours" type="number" inputmode="numeric" min="0" max="99999" step="100" placeholder="not recorded"></div>
+        </div>
+        <div class="row two">
+          <div><label class="dymo" for="f-state" data-dymo>State</label><select id="f-state"></select></div>
+          <div><label class="dymo" for="f-cab" data-dymo>Cab</label><select id="f-cab"></select></div>
+        </div>
+        <div class="opts" id="opts"></div>
+        <div class="row two">
+          <div><label class="dymo" for="f-month" data-dymo>Sale month</label><select id="f-month"></select></div>
+          <div><label class="dymo" for="f-saleyear" data-dymo>Sale year</label><select id="f-saleyear"></select></div>
+        </div>
+        <p class="hint">Leave year or hours blank if unknown: more than four in five auction records have no hours reading, and the model has learned what that usually means.</p>
+      </form>
+
+      <section class="readout" aria-labelledby="est-label">
+        <div class="panel">
+          <p class="label" id="est-label">EST. HAMMER PRICE</p>
+          <p class="price" id="price" aria-live="polite"><span class="wait">LOADING MODEL&hellip;</span></p>
+          <p class="range" id="range"></p>
+        </div>
+        <figure class="scale">
+          <svg id="ruler" viewBox="0 0 600 92" role="img" aria-labelledby="range-cap"></svg>
+          <figcaption id="range-cap">The orange band is the range. On sales from the last four months of 2011, which the model did not train on, {{level_pct}} of hammer prices fell inside a range this wide.</figcaption>
+        </figure>
+        <section class="moved" aria-labelledby="moved-title">
+          <div class="head-line">
+            <h3 class="dymo" id="moved-title" data-dymo style="--tilt:.5deg">What moved the price</h3>
+            <p class="legend"><span class="up"><b>+</b> raises it</span><span><b>&minus;</b> lowers it</span></p>
+          </div>
+          <div class="tornado" id="tornado" aria-hidden="true"></div>
+          <ul class="sr-only" id="pushes-list"></ul>
+          <p class="note" id="start-note"></p>
+        </section>
+      </section>
+
+      <div class="tag-col">
+        <svg class="string" viewBox="0 0 120 82" aria-hidden="true"><path d="M58 4 C 40 26, 76 40, 54 78"/></svg>
+        <span class="rivet hook" aria-hidden="true"></span>
+        <div class="tag-wrap">
+          <aside class="tag" aria-labelledby="tag-title">
+            <span class="hole" aria-hidden="true"></span>
+            <p class="printed" id="tag-title">Lot tag &middot; 2012 sale</p>
+            <div id="tag-body">
+              <p class="lot-no" aria-hidden="true">Lot&nbsp;&mdash;</p>
+              <p class="small">Pull a real sale from the held-out 2012 auctions. Its details fill the form, and the tag shows what it really sold for.</p>
+            </div>
+            <button class="dymo orange pull" id="pull" type="button" data-dymo>Pull a real 2012 sale</button>
+            <p class="small" style="margin-top:12px">Validation data: Jan&ndash;Apr 2012 sales the model never trained on.</p>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <footer class="plate-foot">
+      <p class="stamp-sm">The model runs in this page &middot; nothing you enter leaves it</p>
+      <p class="stamp-sm">{{demo_trees}} trees &middot; {{demo_nodes}} nodes &middot; {{model_kb}} KB</p>
+    </footer>
+  </div>
+</article>
+
+<article class="plate spec-plate" aria-labelledby="spec-title">
+  <span class="rivet tl" aria-hidden="true"></span><span class="rivet tr" aria-hidden="true"></span>
+  <span class="rivet bl" aria-hidden="true"></span><span class="rivet br" aria-hidden="true"></span>
+  <div class="inner">
+    <div class="spec-head">
+      <h2 id="spec-title" class="stamp">SPECIFICATIONS</h2>
+      <p class="stamp-sm">Scored once on {{heldout_sales}} sales, Jan&ndash;Apr 2012 &middot; RMSLE: lower is better</p>
+    </div>
+    <div class="spec-grid">
+      <table class="spec">
+        <caption><span class="dymo small" data-dymo>Held-out error</span></caption>
+        <tbody>
+{{spec_rows}}
+        </tbody>
+      </table>
+      <table class="spec groups">
+        <caption><span class="dymo small" data-dymo style="--tilt:.7deg">By product group</span></caption>
+        <thead><tr><th scope="col">Group</th><th scope="col" style="text-align:right">Sales</th><th scope="col" style="text-align:right">RMSLE</th><th scope="col" style="text-align:right">Bias</th></tr></thead>
+        <tbody>
+{{group_rows}}
+        </tbody>
+      </table>
+    </div>
+    <div class="spec-notes">
+{{spec_notes}}
+    </div>
+  </div>
+</article>
+
+<footer class="credits">
+  <p>Gavel is <a href="https://github.com/evannwilsonn/gavel">Evan Wilson's</a> rebuild, in F#, of the bulldozer price project from Daniel Bourke's <a href="https://github.com/mrdbourke/zero-to-mastery-ml">Zero to Mastery Machine Learning</a> course.</p>
+  <p>Data: Kaggle's <a href="https://www.kaggle.com/c/bluebook-for-bulldozers">Blue Book for Bulldozers</a> competition (Fast Iron, 2013). Prices are past auction results, not an appraisal.</p>
+  <p>Fonts: Big Shoulders, Red Hat Mono and Nothing You Could Do, under the SIL Open Font License.</p>
+</footer>
+</main>
+<p class="dymo orange ticket" id="ticket" aria-hidden="true"></p>
+<script type="application/json" id="g-catalog">{{catalog_json}}</script>
+<script type="application/json" id="g-examples">{{examples_json}}</script>
+<script type="module" src="gavel.js"></script>
+</body>
+</html>

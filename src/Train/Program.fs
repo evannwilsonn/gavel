@@ -1,0 +1,40 @@
+module Gavel.Program
+
+open System.IO
+
+let usage =
+    """usage: dotnet run --project src/Train -c Release -- <command>
+  tune      choose encoding, features and model settings on the 2011 tuning window -> results/tuning.json
+  holdout   fit on all of Train.csv, score the Jan-Apr 2012 sales once -> results/holdout.json, errors.json
+  demo      train and export the browser model -> docs/model.json, catalog.json, examples.json, results/demo.json
+  page      write docs/index.html from web/template.html and results/
+  bench     time one small boosting run (development check)"""
+
+[<EntryPoint>]
+let main argv =
+    let root = Directory.GetCurrentDirectory()
+    let data = Path.Combine(root, "data")
+    let results = Path.Combine(root, "results")
+    let docs = Path.Combine(root, "docs")
+    match argv with
+    | [| "tune" |] -> Experiments.tune data results |> ignore; 0
+    | [| "holdout" |] -> Experiments.holdout data results |> ignore; 0
+    | [| "demo" |] -> Demo.build data results docs None |> ignore; 0
+    | [| "demo-preview"; dir |] -> Demo.build data dir dir (Some Data.Alphabetical) |> ignore; 0
+    | [| "page" |] -> Page.write root; 0
+    | [| "bench" |] ->
+        let train = Data.loadTrain data
+        let fit, check = Experiments.splitTuning train
+        let p = Experiments.prepare (Data.fullFeatures Data.standard Data.ByPrice fit) fit check
+        let sw = Experiments.timed ()
+        let g = { Learners.gbmDefaults with trees = 50; learningRate = 0.1 }
+        let model, trees, curve = Experiments.gbmBest g p
+        Experiments.log (sprintf "50 trees in %.1fs, RMSLE after 50: %.4f" sw.Elapsed.TotalSeconds curve.[curve.Length - 1])
+        let sw = Experiments.timed ()
+        let f = Learners.fitForest { Learners.forestDefaults with trees = 4; maxSamples = 0 } p.fitBins p.fitY
+        let pred = Learners.predictAll f p.testX
+        Experiments.log (sprintf "4 forest trees in %.1fs, RMSLE %.4f, nodes %d" sw.Elapsed.TotalSeconds (Metrics.rmsle pred p.testY) (Ensemble.nodeCount f))
+        0
+    | _ ->
+        eprintfn "%s" usage
+        1

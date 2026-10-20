@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Every experiment, in order. Needs the data (scripts/get-data) and the .NET 8 SDK.
+# Takes about an hour and a half on two cores.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+dotnet build src/Train -c Release
+run() { dotnet src/Train/bin/Release/net8.0/Gavel.Train.dll "$@"; }
+run tune      # results/tuning.json   (2011 tuning window only)
+run holdout   # results/holdout.json, results/errors.json   (opens the 2012 prices)
+run demo      # docs/model.json, catalog.json, examples.json, results/demo.json, results/parity.json
+./scripts/build-js
+run page      # docs/index.html

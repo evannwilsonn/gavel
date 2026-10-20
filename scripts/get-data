@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Fetches the Blue Book for Bulldozers data into data/.
+#
+# Source: the Kaggle competition "Blue Book for Bulldozers" (Fast Iron, 2013),
+# https://www.kaggle.com/c/bluebook-for-bulldozers/data, as copied into the
+# Zero to Mastery ML course repo (data/bluebook-for-bulldozers.zip in
+# https://github.com/mrdbourke/zero-to-mastery-ml). Kaggle's competition rules
+# don't allow redistribution, so the files are not committed here.
+#
+# Only the three files Gavel reads are extracted: Train.csv (sales to the end
+# of 2011, with prices), Valid.csv (Jan-Apr 2012 sales) and ValidSolution.csv
+# (their prices). The zip is deleted afterwards.
+#
+# Set ZTM_REPO to a local clone of the course repo to skip the download.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+mkdir -p data
+if [ -f data/Train.csv ] && [ -f data/Valid.csv ] && [ -f data/ValidSolution.csv ]; then
+  echo "data/ already has Train.csv, Valid.csv and ValidSolution.csv"; exit 0
+fi
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+zip="$tmp/bluebook-for-bulldozers.zip"
+if [ -n "${ZTM_REPO:-}" ]; then
+  git -C "$ZTM_REPO" cat-file -p HEAD:data/bluebook-for-bulldozers.zip > "$zip"
+else
+  curl -fL --retry 3 -o "$zip" \
+    https://github.com/mrdbourke/zero-to-mastery-ml/raw/master/data/bluebook-for-bulldozers.zip
+fi
+for f in Train.csv Valid.csv ValidSolution.csv; do
+  unzip -p "$zip" "bluebook-for-bulldozers/$f" > "data/$f"
+done
+rm -f "$zip"
+echo "Wrote data/Train.csv, data/Valid.csv, data/ValidSolution.csv"
+wc -l data/Train.csv data/Valid.csv data/ValidSolution.csv

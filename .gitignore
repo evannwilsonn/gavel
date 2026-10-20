@@ -1,0 +1,17 @@
+# Kaggle competition data: not redistributable, fetched by scripts/get-data
+data/*.csv
+data/*.zip
+data/*.7z
+data/cache/
+# .NET build output
+bin/
+obj/
+*.swp
+# Fable / Node scratch
+fable-out/
+node_modules/
+.fable/
+# Screenshots are kept outside the repo
+shots/
+.impeccable/
+.preview/
