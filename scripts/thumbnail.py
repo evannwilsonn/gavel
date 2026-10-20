@@ -9,7 +9,7 @@ from playwright.sync_api import sync_playwright
 
 root = Path(__file__).resolve().parent.parent
 h = json.loads((root / "results/holdout.json").read_text())
-base = next(b for b in h["baselines"] if b["name"].startswith("Median by product group and year"))
+base = min(h["baselines"], key=lambda b: b["score"]["rmsle"])  # the strongest baseline, not the weakest
 tokens = {
     "final": f'{h["final"]["score"]["rmsle"]:.3f}',
     "baseline": f'{base["score"]["rmsle"]:.3f}',
